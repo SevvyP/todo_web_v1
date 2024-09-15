@@ -15,6 +15,7 @@ type Resolver struct {
 
 type Config struct {
 	AuthConfig *middleware.AuthConfig `json:"auth"`
+	TaskConfig *service.TaskConfig    `json:"tasks"`
 }
 
 // NewResolver creates a new Resolver with a new HTTP server and database.
@@ -25,17 +26,31 @@ func NewResolver(config *Config) *Resolver {
 		panic("AuthConfig is required")
 	}
 
+	if config.TaskConfig == nil {
+		panic("TaskConfig is required")
+	}
+
+	tokenService := service.NewTokenService(config.AuthConfig)
+
 	mux := http.NewServeMux()
 	resolver := &Resolver{
 		Server: &http.Server{
-			Addr:    ":8080",
+			Addr:    ":8081",
 			Handler: mux,
 		},
+		TaskService: service.NewTaskService(*config.TaskConfig, tokenService),
 	}
 
 	// Wrap the handler with the authentication middleware
 	mux.Handle("/tasks", middleware.EnsureValidToken(config.AuthConfig)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
+		case http.MethodOptions:
+			// validate the preflight request
+			w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+			w.Header().Set("Access-Control-Allow-Headers", "Authorization")
+			w.WriteHeader(http.StatusOK)
 		case http.MethodGet:
 			resolver.GetTasks(w, r)
 		case http.MethodPost:

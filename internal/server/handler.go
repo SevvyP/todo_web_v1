@@ -13,52 +13,36 @@ import (
 // If an "id" query parameter is present, it will return a json document
 // with the task and any subtasks nested under it, or 404 if the task is not found.
 func (r *Resolver) GetTasks(w http.ResponseWriter, req *http.Request) {
-	userID := "get this from the session or something idk"
+
+	userID := req.URL.Query().Get("user_id")
 
 	if userID == "" {
-		http.Error(w, "No user found", http.StatusBadRequest)
-		return
-	}
-
-	id := req.URL.Query().Get("id")
-
-	// Check for "id" query parameter
-	if id != "" {
-		r.GetTasksByID(w, req, userID, id)
+		http.Error(w, "no user_id in request params", http.StatusBadRequest)
 		return
 	}
 
 	tasks, err := r.TaskService.GetTasks(userID)
 	if err != nil {
-		http.Error(w, "Failed to get tasks", http.StatusInternalServerError)
-		return
-	}
-	out, err := util.FormatTaskJson(tasks)
-	if err != nil {
-		http.Error(w, "Failed to format tasks", http.StatusInternalServerError)
-		return
-	}
-	json.NewEncoder(w).Encode(out)
-}
-
-// GetTasksByID handles the GET /tasks?id=<id> route. It will fetch the task
-// with the given id and return a json document with the task and any subtasks
-// nested under it, or 404 if the task is not found.
-func (r *Resolver) GetTasksByID(w http.ResponseWriter, req *http.Request, userID string, id string) {
-	tasks, err := r.TaskService.GetTasksByID(userID, id)
-	if err != nil {
-		http.Error(w, "Failed to get tasks", http.StatusInternalServerError)
+		http.Error(w, "Failed to get tasks: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if tasks == nil {
-		http.Error(w, "Task not found", http.StatusNotFound)
+		http.Error(w, "No tasks found", http.StatusNotFound)
 		return
 	}
-	out, err := util.FormatTaskJson(tasks)
+	out, err := util.FormatTaskJson(*tasks)
 	if err != nil {
 		http.Error(w, "Failed to format tasks", http.StatusInternalServerError)
 		return
 	}
+	if out == nil {
+		http.Error(w, "No tasks found", http.StatusNotFound)
+		return
+	}
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.Header().Set("Access-Control-Allow-Headers", "Authorization")
 	json.NewEncoder(w).Encode(out)
 }
 

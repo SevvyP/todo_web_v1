@@ -1,0 +1,11 @@
+{
+    "tasks": {
+        "baseurl": "http://localhost:8080"
+    },
+    "auth": {
+        "domain": "dev-ahizp3vfxgq38um3.us.auth0.com",
+        "audience": "tasks_v1_web",
+        "client_id": "YOUR_CLIENT_ID",
+        "client_Secret": "YOUR"
+    }
+}

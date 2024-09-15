@@ -17,6 +17,8 @@ import (
 type AuthConfig struct {
 	Domain   string `json:"domain"`
 	Audience string `json:"audience"`
+	ClientID string `json:"client_id"`
+	Secret   string `json:"client_secret"`
 }
 
 // CustomClaims contains custom data we want from the token.
@@ -66,6 +68,7 @@ func EnsureValidToken(config *AuthConfig) func(next http.Handler) http.Handler {
 	middleware := jwtmiddleware.New(
 		jwtValidator.ValidateToken,
 		jwtmiddleware.WithErrorHandler(errorHandler),
+		jwtmiddleware.WithValidateOnOptions(false),
 	)
 
 	return func(next http.Handler) http.Handler {
